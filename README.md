@@ -3,4 +3,6 @@
 
 [Bryant University](https://www.bryant.edu/)
 
-[Assignment 1](https://bryant.instructure.com/courses/16528/assignments/289591/submissions/14908)
+[Assignment 1](assignment 1.html)
+
+[Assignment 2](assignment2.html)
