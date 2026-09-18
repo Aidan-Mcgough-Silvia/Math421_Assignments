@@ -6,3 +6,5 @@
 [Assignment 1](assignment 1.html)
 
 [Assignment 2](assignment2.html)
+
+[Assignment 3](assignment3q.html)
