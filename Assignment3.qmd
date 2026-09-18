@@ -232,7 +232,7 @@ prop.table(table(df2$death2))
     titanic$FareGroup <- ifelse(titanic$Fare < 20,"Low",ifelse(titanic$Fare < 50,"Medium","High"))
     table(titanic$FareGroup)
     titanic$ClassGroup <- ifelse(titanic$Pclass == 1,"First","Second_or_Third")
-    table(titanic$ClassGroup)
+    table(titanic$ClassGroup) 
     ```
 
 If you do not have a data, you can use [the titanic dataset](https://www.kaggle.com/competitions/titanic/overview), which can be downloaded at [this link](https://bryantstats.github.io/math421/data/titanic.csv)
