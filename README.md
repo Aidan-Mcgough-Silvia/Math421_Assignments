@@ -11,5 +11,5 @@
 
 [Assignment 4](assignment4q.html)
 
-[Assignment 5](assignemtn5_part1.html)
+[Assignment 5](assignemnt5_part1.html)
 
