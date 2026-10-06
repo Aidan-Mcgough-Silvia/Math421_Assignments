@@ -13,3 +13,5 @@
 
 [Assignment 5](assignment5q.html)
 
+[Assignment 6](assignment6.html)
+

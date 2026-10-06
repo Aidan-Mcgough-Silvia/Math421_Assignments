@@ -208,7 +208,7 @@ You can use the [Adult Census Income](https://bryantstats.github.io/math421/data
 - filter fare class age \< 20
 
 ```{r}
-titanic <- read.csv("C://Users//student//Documents//GitHub//Math421_Assignments//titanic.csv") 
+titanic <- read_csv("C://Users//student//Documents//GitHub//Math421_Assignments//titanic.csv") 
 head(titanic)
 titanic %>% select(Pclass, Sex, Age, Survived)
 titanic %>% filter(Survived == 1)
@@ -224,5 +224,15 @@ summarise(mean_age = mean(Age, na.rm = TRUE))
 titanic %>% group_by(Pclass) %>% summarise(survival_rate2 = mean(Survived, na.rm = TRUE)) %>%arrange(desc(survival_rate2))
 
 
-titanic %>% filter(Age < 20) %>% filter(Pclass ==2) %>%(mean_fare = mean(Fare, na.rm = TRUE)) 
+titanic %>% filter(Age > 12, < 20) %>% filter(Sex = 0) %>% (mean_fare = mean(Fare, na.rm = TRUE)) 
+```
+
+```{r}
+titanic <- read_csv("C://Users//student//Documents//GitHub//Math421_Assignments//titanic.csv") 
+
+titanic %>% filter(Age > 12, Age < 20) %>% filter(Sex == "female") %>% summarise(mean_fare = mean(Fare, na.rm = TRUE)) 
+```
+
+```{r}
+
 ```

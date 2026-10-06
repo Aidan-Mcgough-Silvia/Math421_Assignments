@@ -1,0 +1,125 @@
+---
+title: "Assignment 6"
+format: html
+editor: visual
+---
+
+***How to do it?***:
+
+- Open the Rmarkdown file of this assignment ([link](assignment6.Rmd)) in Rstudio.
+
+- Right under each **question**, insert a code chunk (you can use the hotkey `Ctrl + Alt + I` to add a code chunk) and code the solution for the question.
+
+- `Knit` the rmarkdown file (hotkey: `Ctrl + Alt + K`) to export an html.
+
+- Publish the html file to your Githiub Page.
+
+***Submission***: Submit the link on Github of the assignment to Canvas.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+------------------------------------------------------------------------
+
+### Questions on Your Selected Data
+
+Choose a dataset and produce the following types of plots and comment on each plot. Plots should be meaningful. If you use the data we used in class, make sure the plots are not the same as the ones in the slides.
+
+------------------------------------------------------------------------
+
+1.  For one continuous variable:
+
+- Density
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+df <- read_csv("C://Users//student//Documents//GitHub//Math421_Assignments//titanic.csv")
+df %>% ggplot()+geom_density(mapping = aes(x = Fare))
+```
+
+- Histogram
+
+```{r}
+df %>% ggplot()+geom_histogram(mapping = aes(x = Fare))
+```
+
+- Boxplot
+
+```{r}
+df %>% ggplot()+geom_boxplot(mapping = aes(x = Fare))
+```
+
+------------------------------------------------------------------------
+
+2.  For one categorical variable
+
+- Barplot
+
+```{r}
+df %>% ggplot()+geom_bar(mapping = aes(x = Pclass))
+```
+
+------------------------------------------------------------------------
+
+3.  For two continuous variables
+
+- Scatter Plot
+
+```{r}
+df %>% ggplot()+geom_point(aes(x=PassengerId, y=Age))
+```
+
+- Line Plot
+
+```{r}
+df %>% ggplot()+geom_line(aes(x=PassengerId, y=Age))
+```
+
+- Smooth Plot
+
+```{r}
+df %>% ggplot()+geom_smooth(aes(x=PassengerId, y=Age))
+```
+
+```{r}
+
+```
+
+```{))}
+```
+
+------------------------------------------------------------------------
+
+4.  For one continuous + one categorical variables
+
+- Density
+
+```{r}
+df$Pclass <- as.factor(df$Pclass)
+df %>% ggplot()+ geom_density(mapping = aes(x = Fare, color=Pclass))
+```
+
+- BoxPlot
+
+```{r}
+df %>% ggplot()+geom_boxplot(mapping = aes(x = Fare, y = Pclass))
+```
+
+------------------------------------------------------------------------
+
+5.  For two categorical variables: barplot
+
+```{r}
+df$Survived <- as.factor(df$Survived)
+df %>% ggplot()+geom_bar(mapping=aes(x=Pclass, fill=Survived), position = 'fill')
+```
+
+------------------------------------------------------------------------
+
+6.  A plot that contains three variables
+
+```{r}
+df %>% ggplot() + geom_point(aes(x=Fare, y=Pclass, color = Embarked))
+```

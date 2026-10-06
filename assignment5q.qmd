@@ -49,6 +49,7 @@ aggr(df)
 3.  Find other forms of missing values. Hint: You can use the `table` function to check if there are suspicious categories (Unknown, for example) in a variable. What all other forms of missing values shown in the data.
 
 ```{r}
+# include NAs
 table(df$workclass, useNA = "ifany")
 table(df$occupation, useNA = "ifany")
 table(df$native_country, useNA = "ifany")
