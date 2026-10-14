@@ -1,0 +1,82 @@
+---
+title: "Assignment 8"
+format: html
+editor: visual
+---
+
+***How to do it?***:
+
+- Open the Rmarkdown file of this assignment ([link](assignment8.Rmd)) in Rstudio.
+
+- Right under each **question**, insert a code chunk (you can use the hotkey `Ctrl + Alt + I` to add a code chunk) and code the solution for the question.
+
+- `Knit` the rmarkdown file (hotkey: `Ctrl + Alt + K`) to export an html.
+
+- Publish the html file to your Githiub Page.
+
+***Submission***: Submit the link on Github of the assignment to Canvas
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+------------------------------------------------------------------------
+
+1.  Install two packages `gganimate` and `gifski` then restart Rstudio. Using the `Adult Census Income` data, make an animation using `geom_point` and `transition_states`.
+
+```{r}
+library(gapminder)
+library(gifski)
+library(gganimate)
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+library(knitr)
+df <- read_csv("C://Users//student//Documents//GitHub//Math421_Assignments//adult_census.csv")
+df <- ggplot(df, aes(x = age, y = hours.per.week))+geom_point(size=4) + transition_states(age)
+animate(df)
+```
+
+2.  Using the `Adult Census Income` data, make an animation using `geom_bar` and `transition_states`.
+
+```{r}
+df2 <- read_csv("C://Users//student//Documents//GitHub//Math421_Assignments//adult_census.csv")
+df2 %>% ggplot(aes(x = workclass, fill = income)) + geom_bar() + transition_states(sex)
+```
+
+3.  Use the WHO's dataset at [this link](../data/WHO-COVID-19-global-data.csv). Make a top-10 bar race by months between countries on the number of deaths by Covid 19 in 2021.
+
+```{r}
+df3 <- read_csv("C://Users//student//Documents//GitHub//Math421_Assignments//WHO-COVID-19-global-data.csv")
+# Convert the reported date and select 2021
+df3 <- df3 %>% mutate(Date_reported = as.Date(Date_reported)) %>% filter(Date_reported >= as.Date("2021-01-01"), Date_reported < as.Date("2022-01-01"))
+# Create a month variable
+df3$month <- month(df3$Date_reported)
+# Calculate monthly deaths for each country
+d1 <- df3 %>% group_by(month, Country) %>% summarise(deaths = sum(New_deaths, na.rm = TRUE), .groups = "drop")
+# Rank countries within each month
+d2 <- d1 %>% group_by(month) %>% mutate(rank = rank(-deaths))
+# Keep the top 10 countries per month
+d3 <- d2 %>% filter(rank <= 10)
+# Create the bar race
+a1 <- d3 %>% ggplot(aes(x = rank, y = deaths, group = Country,      fill = Country, label = Country)) + geom_col() + geom_text(aes(y = deaths, label = Country), hjust = 1.4) + coord_flip(clip = "off", expand = FALSE) + scale_x_reverse() + labs(title = "Month: {closest_state}", x = "", y = "Monthly COVID-19 deaths", fill = "Country") + theme(plot.title = element_text(hjust = 1, size = 22),
+axis.ticks.y = element_blank(), axis.text.y = element_blank()) +
+transition_states(month) + ease_aes("cubic-in-out")
+
+animate(a1, nframes = 400)
+```
+
+4.  Make a bar race using a dataset of your own interest. You may use the dataset that we use in class (<https://bryantstats.github.io/math421/data/all-states-history.csv)> but you should make a different bar racev from ones in the slides.
+
+```{r}
+# Read the WHO COVID-19 data
+df4 <- read_csv("C://Users//student//Documents//GitHub//Math421_Assignments//titanic.csv")
+c1 <- df4 %>% filter(Survived == 1) %>% group_by(Sex, Pclass) %>%
+summarise(survivors = n(), .groups = "drop")
+# Create the horizontal bar animation
+b1 <- c1 %>% ggplot(aes(x = factor(Pclass), y = survivors, fill = factor(Pclass), group = Pclass)) + geom_col() + geom_text(aes(label = paste("Class", Pclass)), hjust = 1.2) + coord_flip(clip = "off", expand = FALSE) + labs(title = "Survivors: {closest_state}", x = "",
+y = "Number of survivors", fill = "Passenger class") +theme(
+plot.title = element_text(hjust = 0.5, size = 20), axis.text.y = element_blank(), axis.ticks.y = element_blank()) + transition_states(Sex) + ease_aes("cubic-in-out")
+# Display the animation
+animate(b1, nframes = 100)
+```

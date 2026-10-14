@@ -87,8 +87,7 @@ df %>% ggplot()+geom_smooth(aes(x=PassengerId, y=Age))
 
 ```
 
-```{))}
-```
+`{))}`
 
 ------------------------------------------------------------------------
 
@@ -122,4 +121,13 @@ df %>% ggplot()+geom_bar(mapping=aes(x=Pclass, fill=Survived), position = 'fill'
 
 ```{r}
 df %>% ggplot() + geom_point(aes(x=Fare, y=Pclass, color = Embarked))
+```
+
+```{r}
+dfmedian <- median(df$Fare)
+df %>% filter(Fare > dfm
+              edian)
+filtered_data <- filter(df$Sex, Fare > dfmedian)
+df$Survived <- as.factor(df$Survived)
+df %>% ggplot()+geom_bar(mapping=aes(x=Sex, fill=Survived), position = 'fill')
 ```
