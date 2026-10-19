@@ -115,23 +115,24 @@ Do the follows.
 
 - Use `geom_point` to compare the vaccines used by date in Argentina in 2022.
 
-  ```{r}
+```{r}
+  library(httpgd)
   df2 %>% filter(location=='Argentina', date>='2022-01-01', date<'2023-01-01') %>% ggplot()+geom_point(mapping = aes(x = date, y = total_vaccinations, color = vaccine))+
     labs(x='Date', y='Total Vaccinations', color='Vaccine', title='COVID-19 Vaccinations in Argentina, 2022', caption='Vaccination totals by vaccine type.')
-  ```
+```
 
 - Change `geom_point` to `geom_line` in the above codes to have the corresponding line plots.
 
-  ```{r}
+```{r}
   df2 %>% filter(location=='Argentina', date>='2022-01-01', date<'2023-01-01') %>% ggplot()+geom_line(mapping = aes(x = date, y = total_vaccinations, color = vaccine))+
     labs(x='Date', y='Total Vaccinations', color='Vaccine', title='Vaccination Trends in Argentina, 2022', caption='Lines show recorded totals by vaccine type.')
-  ```
+```
 
 11. (Using the same dataset as in 10.) Sometime we need to do some calculations on the data before plotting. For example, the below codes is to compare the total vaccines (including all types of vaccines) by date between the US and the EU
 
-```{r, eval=FALSE}
+```{r}
 # the total vaccines (including all types of vaccines) by date
-d1 <- df %>% 
+d1 <- df2 %>% 
   filter(location %in% c('United States', 'European Union')) %>% 
   group_by(date, location) %>% 
   summarise(total_vac2=sum(total_vaccinations, na.rm=TRUE))
@@ -140,13 +141,13 @@ d1 <- df %>%
 d1 %>% 
   ggplot()+
   geom_point(mapping=aes(x=date, 
-                         y=total_vac2, 
-                         color=location))
+                         y=total_vac2,color=location))
 ```
+
 
 Notice that the above codes could be piped in one
 
-```{r, eval=FALSE}
+```{r}
 df2 %>% 
   filter(location %in% c('United States', 'European Union')) %>% 
   group_by(date, location) %>% 
@@ -161,14 +162,15 @@ Do the follows.
 
 - Use `geom_point` compare the total vaccines (including all types of vaccines) by date between countries/regions in Asia
 
-  ```{r}
-  df2 %>% filter(location %in% c('China', 'India', 'Japan', 'Indonesia', 'Thailand', 'Malaysia', 'Singapore', 'Philippines', 'Vietnam', 'South Korea')) %>% group_by(date, location) %>% summarise(total_vac2=sum(total_vaccinations, na.rm=TRUE)) %>% ggplot()+ geom_point(mapping=aes(x=date, y=total_vac2, color=location))+
+```{r}
+df2 %>% filter(location %in% c('China', 'India', 'Japan', 'Indonesia', 'Thailand', 'Malaysia', 'Singapore', 'Philippines', 'Vietnam', 'South Korea')) %>% group_by(date, location) %>% summarise(total_vac2=sum(total_vaccinations, na.rm=TRUE)) %>% ggplot()+ geom_point(mapping=aes(x=date, y=total_vac2, color=location))+
     labs(x='Date', y='Total Vaccinations', color='Country', title='Vaccination Totals in Selected Asian Countries', caption='Recorded totals by date and country.')
-  ```
+```
 
 - Use `geom_point` compare the total vaccines (including all types of vaccines) by date between countries/regions in South America in 2021
 
-  ```{r}
-  df2 %>% filter(location %in% c('Argentina', 'Brazil', 'Chile', 'Colombia', 'Peru', 'Uruguay', 'Ecuador', 'Bolivia', 'Paraguay', 'Venezuela', 'Guyana', 'Suriname'), date>='2021-01-01', date<'2022-01-01') %>% group_by(date, location) %>% summarise(total_vac2=sum(total_vaccinations, na.rm=TRUE)) %>% ggplot()+geom_point(mapping=aes(x=date, y=total_vac2, color=location))+
+```{r}
+df2 %>% 
+filter(location %in% c('Argentina', 'Brazil', 'Chile', 'Colombia', 'Peru', 'Uruguay', 'Ecuador', 'Bolivia', 'Paraguay', 'Venezuela', 'Guyana', 'Suriname'), date>='2021-01-01', date<'2022-01-01') %>% group_by(date, location) %>% summarise(total_vac2=sum(total_vaccinations, na.rm=TRUE)) %>% ggplot()+geom_point(mapping=aes(x=date, y=total_vac2, color=location))+
     labs(x='Date', y='Total Vaccinations', color='Country', title='Vaccination Totals in South America, 2021', caption='Recorded totals by date and country.')
-  ```
+```
