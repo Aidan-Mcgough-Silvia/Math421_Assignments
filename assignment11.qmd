@@ -26,63 +26,138 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 library(mlbench)
 library(tidyverse)
 library(caret)
+library(rpart)
+library(randomForest)
+library(glmnet)
+library(klaR)
+
 data(PimaIndiansDiabetes)
+
 df <- tibble(PimaIndiansDiabetes)
+
+df$diabetes <- factor(df$diabetes, levels = c("neg", "pos"))
 
 set.seed(123)
 splitIndex <- createDataPartition(df$diabetes, p = 0.70, list = FALSE)
+
 df_train <- df[splitIndex, ]
-df_test <- df[-splitIndex, ]
+df_test  <- df[-splitIndex, ]
+
+# Check the target categories
+table(df_train$diabetes)
+table(df_test$diabetes)
 ```
 
 Train and Test a decision tree and a random forest with caret. Plot the variable importance of these models.
 
-2. Train and Test a glmnet model. Plot the variable importance of the model.
-
 ```{r}
-# decision tree
-model1 <- train(diabetes ~ ., data = df_train, method = "rpart2", maxdepth = 3)
-pred <- predict(model1, df_test)
-cm <- confusionMatrix(data = pred, reference = df_test$diabetes,
-positive = "pos")
-# accuracy
-cm$overall[1]
-# variable importance
+set.seed(123)
+
+model1 <- train(diabetes ~ ., data = df_train, method = "rpart2",
+tuneLength = 10, trControl = trainControl(method = "cv", number = 5))
+
+# predict
+pred1 <- predict(model1, newdata = df_test)
+
+# matrix
+cm1 <- confusionMatrix(data = pred1, reference = df_test$diabetes, positive = "pos")
+
+cm1
+cm1$overall["Accuracy"]
+
+# importance
 varImp(model1)
-# plot
-plot(varImp(model1))
+plot(varImp(model1), main = "Decision Tree Variable Importance")
+```
+```{r}
+set.seed(123)
 
-# random forest
-model2 <- train(diabetes ~ ., data = df_train, method = "rf",       ntree = 1000)
-pred <- predict(model2, df_test)
-cm <- confusionMatrix(data = pred, reference = df_test$diabetes,
+model2 <- train(diabetes ~ ., data = df_train, method = "rf",     ntree = 1000, tuneLength = 3, trControl = trainControl(method = "cv", number = 5))
+
+# predict
+pred2 <- predict(model2, newdata = df_test)
+
+# matrix
+cm2 <- confusionMatrix(data = pred2, reference = df_test$diabetes,
 positive = "pos")
-# accuracy
-cm$overall[1]
-# variable importance
+
+cm2
+cm2$overall["Accuracy"]
+
+# importance
 varImp(model2)
-# plot
-plot(varImp(model2))
+plot(varImp(model2), main = "Random Forest Variable Importance")
 ```
 
-3. Train and test two models that are not ranger, glmnet or rpart with caret. If possible, plot the variable importance of the model.
+
+2.  Train and Test a glmnet model. Plot the variable importance of the model.
 
 ```{r}
-model3 <- train(diabetes ~ ., data = df_train, method = "glmnet",
-preProcess = c("center", "scale"))
+df_train <- as.data.frame(df_train)
+df_test <- as.data.frame(df_test)
 
-pred <- predict(model3, df_test)
+df_train$diabetes <- factor(df_train$diabetes, levels = c("neg", "pos"))
+df_test$diabetes <- factor(df_test$diabetes, levels = c("neg", "pos"))
 
-cm <- confusionMatrix(data = pred, reference = df_test$diabetes,
-positive = "pos")
+sapply(df_train, is.list)
 
-# accuracy
-cm$overall[1]
-# variable importance
-varImp(model3)
-# plot
-plot(varImp(model3))
+set.seed(123)
+
+glmnet_model <- train(diabetes ~ ., data = df_train, method = "glmnet", preProcess = c("center", "scale"), trControl = trainControl(method = "cv", number = 5), tuneLength = 10)
+
+# predict
+glmnet_predictions <- predict(glmnet_model, newdata = df_test)
+
+# matrix
+confusionMatrix(glmnet_predictions, df_test$diabetes, positive = "pos")
+
+glmnet_importance <- varImp(glmnet_model)
+print(glmnet_importance)
+plot(glmnet_importance, main = "GLMNET Variable Importance")
 ```
 
+3.  Train and test two models that are not ranger, glmnet or rpart with caret. If possible, plot the variable importance of the model.
 
+```{r}
+set.seed(123)
+
+model4 <- train(diabetes ~ ., data = df_train, method = "lda",
+preProcess = c("center", "scale"), trControl = trainControl(method = "cv", number = 5))
+
+# predict
+pred4 <- predict(model4, newdata = df_test)
+
+# matrix
+cm4 <- confusionMatrix(data = pred4, reference = df_test$diabetes,
+positive = "pos")
+
+cm4
+cm4$overall["Accuracy"]
+
+varImp(model4)
+plot(varImp(model4), main = "LDA Variable Importance")
+```
+
+```{r}
+set.seed(123)
+
+model5 <- train(diabetes ~ ., data = df_train, method = "knn",
+preProcess = c("center", "scale"), tuneLength = 10, trControl = trainControl(method = "cv", number = 5))
+
+# predict
+pred5 <- predict(model5, newdata = df_test)
+
+# matrix
+cm5 <- confusionMatrix(data = pred5, reference = df_test$diabetes,
+positive = "pos")
+
+cm5
+cm5$overall["Accuracy"]
+
+varImp(model5)
+plot(varImp(model5), main = "KNN Variable Importance")
+
+
+model5$bestTune
+```
 
