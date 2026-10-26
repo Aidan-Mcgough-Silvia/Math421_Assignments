@@ -1,0 +1,161 @@
+---
+title: "Assignment 12"
+format: html
+editor: visual
+---
+
+***How to do it?***:
+
+- Open the Rmarkdown file of this assignment ([link](assignment12.Rmd)) in Rstudio.
+
+- Right under each **question**, insert a code chunk (you can use the hotkey `Ctrl + Alt + I` to add a code chunk) and code the solution for the question.
+
+- `Knit` the rmarkdown file (hotkey: `Ctrl + Alt + K`) to export an html.
+
+- Publish the html file to your Githiub Page.
+
+***Submission***: Submit the link on Github of the assignment to Blackboard.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+1.  Use the `PimaIndiansDiabetes` dataset. Use 15% data for testing. Use cross-validation with of 7 folds to tune random forest `(method='ranger')`. What are the parameters that produce the greatest accuracy? What is the testing accuracy.
+
+```{r}
+library(tidyverse)
+library(caret)
+library(mlbench)
+library(ranger)
+
+data(PimaIndiansDiabetes, package = "mlbench")
+df <- tibble(PimaIndiansDiabetes)
+df$diabetes <- as.factor(df$diabetes)
+
+# split
+set.seed(123)
+splitIndex <- createDataPartition(df$diabetes, p = 0.85, list = FALSE)
+
+df_train <- df[splitIndex, ]
+df_test <- df[-splitIndex, ]
+
+# folds
+trControl <- trainControl(method = "cv", number = 7)
+
+# tune
+tuneGrid <- expand.grid(mtry = 2:4, splitrule = c("gini", "extratrees"),
+                        min.node.size = 1:10)
+
+set.seed(123)
+forest_ranger <- train(diabetes ~ ., data = df_train, method = "ranger",
+                       trControl = trControl, tuneGrid = tuneGrid, metric = "Accuracy")
+
+print(forest_ranger)
+```
+
+2. Use the `PimaIndiansDiabetes` dataset. Go to https://topepo.github.io/caret/available-models.html and pick a classification model.  Tune the classification model using cross-validation of 7 folds. 
+
+```{r}
+library(tidyverse)
+library(caret)
+library(mlbench)
+library(rpart)
+
+data(PimaIndiansDiabetes, package = "mlbench")
+
+df <- tibble(PimaIndiansDiabetes)
+df$diabetes <- as.factor(df$diabetes)
+
+# split
+set.seed(123)
+splitIndex <- createDataPartition(df$diabetes, p = 0.85, list = FALSE)
+
+df_train <- df[splitIndex, ]
+df_test <- df[-splitIndex, ]
+
+# folds
+trControl <- trainControl(method = "cv", number = 7)
+
+# tune
+tuneGrid <- expand.grid(maxdepth = 2:10)
+
+set.seed(123)
+tree_model <- train(diabetes ~ ., data = df_train, method = "rpart2",
+trControl = trControl, tuneGrid = tuneGrid, metric = "Accuracy")
+
+print(tree_model)
+
+# besth
+tree_model$bestTune
+
+plot(tree_model)
+```
+
+3. (Model Comparison) Use the `PimaIndiansDiabetes` dataset. Pick two models at [this link](https://topepo.github.io/caret/available-models.html) to compare using 7-fold cross validation method. Evaluate the accuracy of the final model on the test data.
+
+```{r}
+library(tidyverse)
+library(caret)
+library(mlbench)
+library(rpart)
+library(ranger)
+
+data(PimaIndiansDiabetes, package = "mlbench")
+
+df <- tibble(PimaIndiansDiabetes)
+df$diabetes <- as.factor(df$diabetes)
+
+# split
+set.seed(123)
+splitIndex <- createDataPartition(df$diabetes, p = 0.85, list = FALSE)
+
+df_train <- df[splitIndex, ]
+df_test <- df[-splitIndex, ]
+
+# folds
+trControl <- trainControl(method = "cv", number = 7)
+
+# decision tree
+set.seed(123)
+tree_model <- train(diabetes ~ ., data = df_train, method = "rpart2",
+trControl = trControl, tuneGrid = expand.grid(maxdepth = 2:10),
+metric = "Accuracy")
+
+# random forest
+set.seed(123)
+forest_model <- train(diabetes ~ ., data = df_train, method = "ranger",
+trControl = trControl, metric = "Accuracy")
+
+# compare
+results <- resamples(list("Decision Tree" = tree_model,          "Random Forest" = forest_model))
+
+bwplot(results)
+
+summary(results)
+
+# compare
+tree_accuracy <- max(tree_model$results$Accuracy)
+forest_accuracy <- max(forest_model$results$Accuracy)
+
+comparison <- data.frame(Model = c("Decision Tree", "Random Forest"),
+Cross_Validation_Accuracy = c(tree_accuracy, forest_accuracy))
+
+print(comparison)
+
+# select higher
+if (tree_accuracy >= forest_accuracy) {final_model <- tree_model
+final_model_name <- "Decision Tree"} else {final_model <- forest_model
+final_model_name <- "Random Forest"}
+
+cat("Selected final model:", final_model_name, "\n")
+
+# eval
+pred <- predict(final_model, df_test)
+
+cm <- confusionMatrix(data = pred, reference = df_test$diabetes)
+
+cat("Testing accuracy:", cm$overall["Accuracy"], "\n")
+
+print(cm)
+```
+
