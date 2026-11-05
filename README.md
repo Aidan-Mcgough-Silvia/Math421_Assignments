@@ -26,5 +26,6 @@
 
 [Assignment 12](assignment12.html)
 
+[Midterm Source](midterm_tab.Rmd)
 [Midterm](midterm_tab.html)
 [Midtern Presentation](midterm_presentation_split_images.html)
