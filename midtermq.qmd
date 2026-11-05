@@ -1,0 +1,861 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+------------------------------------------------------------------------
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Instruction
+
+The midterm has two components: the Rmarkdown notebook (html) and the presentation. We will do the presentation in class. Post both the notebook and the presentation on your Github page.
+
+**The notebook:** The notebook should be created using `rmarkdown` or Quarto (like other assignments). The notebook should have a title.
+
+**The Presentation:** Present your results in 5-10 minutes. To make the presentation using Rmarkdown, do the follows:
+
+```         
+- In Rstudio -> File -> New File -> R markdown
+
+- In the left panel, click to Presentation -> Click OK
+
+- Now you have an Rmarkdown that can be knitted to be a html presentation 
+```
+
+- You can also use the Rmd templates of the class slides.
+
+- You can also use Quarto to create the presentation: *In Rstudio -\> File -\> New File -\> Quarto Presentation...*
+
+- You do not need to rerun all the codes for the presentation. For example, to show the model comparison, you just need to show the image of the model comparison instead of running all the models again.
+
+- To inset an image in a slide, use `![](image.png)`
+
+- To scale images, you can use `![](image.png){width="60%"}` or follow these below instructions.
+
+  - <https://bookdown.org/yihui/rmarkdown-cookbook/figure-size.html>
+
+  - <http://zevross.com/blog/2017/06/19/tips-and-tricks-for-working-with-images-and-figures-in-r-markdown-documents/>
+
+- To turn off message and warning of a code cell, use: `{r, message=FALSE, warning=FALSE}` for the cell.
+
+**What to present**:
+
+- Present Part 2 - Visualization
+
+- Present Question Question 4, 5 and 6 in Part 3.
+
+- Present any errors/challenges you run into and how you fix/overcome them.
+
+**Data:**
+
+The data for the mid-term project is the Rhode Island Department of Health Hospital Discharge Data. Each row of the data presents a patient.
+
+Link: <https://drive.google.com/open?id=15QNBf6YYKocK2nNIfpKDer58kQnCPNZJ>
+
+**Notice**
+
+- Since this is a large dataset, you could try to run the codes on the smaller dataset, which is a portion of the original dataset before running the codes on the original data. To create a random subset of the data you could use
+
+```{r, eval=FALSE}
+# find the number of rows of the data
+n = nrow(df)
+
+# subset 1000 rows of the data
+df1 = df[sample(1:n, 1000), ]
+```
+
+------------------------------------------------------------------------
+
+## I. Data Wranggling
+
+1.  Download the data file `hdd0318cy.sas7bdat`.
+
+2.  Use `read_sas` in library `haven` to read the data.
+
+```{r}
+library(tidyverse)
+library(haven)
+library(ggplot2)
+library(lubridate)
+df <- read_sas("C://Users//student//Documents//GitHub//Math421_Assignments//Copy of hdd0318cy.sas7bdat")
+```
+
+3.  Filter the data to have only patients of the year 2018 (`yod=18`)
+
+```{r}
+df <- df %>% filter(yod == 18)
+```
+
+4.  Select to work with only following variables:
+
+```{r, eval=FALSE}
+                      df <- df %>%
+                select"yod", "payfix","pay_ub92","age",  
+                      "sex","raceethn","provider","moa", 
+                      "yoa","mod","admtype", "asource" , 
+                      "preopday" ,"los", "service" , "icu","ccu",    
+                      "dispub92", "payer"  ,"drg","trandb", 
+                      "randbg","randbs","orr", "anes","seq",   
+                      "lab","dtest", "ther","blood","phar", 
+                      "other","patcon","bwght","total","tot" ,  
+                      "ecodub92","b_wt","pt_state","diag_adm","ancilar" ,
+                      "campus","er_fee","er_chrg","er_mode","obs_chrg",
+                      "obs_hour","psycchrg","nicu_day"
+```
+
+*Notice*: You may want to save the current data to your computer for easy access later. To save the data file use `write_csv(df, 'midterm.csv')`, for example. Also notice that, empty values in the data before writing to csv may turn to NAs later when you re-read the file.
+
+5.  What are variables that have missing values?
+
+```{r}
+# count missing values in each column
+missing_values <- data.frame(Variable = names(df), Missing_Count = colSums(is.na(df)))
+
+# keep
+missing_values <- missing_values %>% filter(Missing_Count > 0) 
+
+print(missing_values)
+```
+
+6.  Remove all variables with missing values.
+
+```{r}
+# replace numeric with median
+df_clean <- df %>% mutate(across(where(is.numeric),
+~ replace_na(.x, median(.x, na.rm = TRUE))))
+
+# replace categorical with mode
+for (col in names(df_clean)) {
+if (is.character(df_clean[[col]]) || is.factor(df_clean[[col]])) {
+mode_value <- names(which.max(table(df_clean[[col]])))
+df_clean[[col]][is.na(df_clean[[col]])] <- mode_value}}
+
+colSums(is.na(df_clean))
+
+dim(df)
+dim(df_clean)
+```
+
+7.  Refer to the data description in the file `HDD2015-18cy6-20-19.docx`, which variable recording the month of admission?, which variable recording the month of discharge?
+
+```{r}
+# moa records month of admission
+# mod records month of discharge 
+```
+
+8.  Which month admitted the most number of patients? Which month admitted the most number of male patients?
+
+```{r}
+monthly_patients <- df_clean %>% group_by(moa) %>%
+summarise(Patient_Count = n(), .groups = "drop") %>% arrange(moa)
+# slice_max gives largest value in column
+# month with most
+monthly_patients %>% slice_max(Patient_Count, n = 1)
+
+# male patients by month
+male_patients <- df_clean %>% filter(sex == "1") %>% group_by(moa) %>%
+summarise(Male_Patients = n(),.groups = "drop") %>%
+arrange(desc(Male_Patients))
+
+# month with most male
+male_patients %>% slice_max(Male_Patients, n = 1)
+```
+
+9.  Which month has the most number of teenage female patients?
+
+```{r}
+teenage_females <- df_clean %>% filter(age >= 13, age <= 19,
+sex == "2") %>% group_by(moa) %>% summarise(Teenage_Females = n(),
+.groups = "drop") %>%arrange(desc(Teenage_Females))
+
+# month with most
+teenage_females %>%
+  slice_max(Teenage_Females, n = 1)
+```
+
+10. Which provider has the most number of female patients in October?
+
+```{r}
+october_females <- df_clean %>% filter(moa == 10, sex == "2") %>%
+group_by(provider) %>% summarise(Female_Patients = n(),.groups = "drop"
+) %>% arrange(desc(Female_Patients))
+
+# provider with most
+october_females %>% slice_max(Female_Patients, n = 1)
+```
+
+11. Are female patients older than male patients, on average?
+
+```{r}
+average_age_gender <- df_clean %>% group_by(sex) %>% summarise(
+Average_Age = mean(age, na.rm = TRUE), .groups = "drop")
+
+print(average_age_gender)
+
+# compare
+female_age <- average_age_gender %>% filter(sex == "2") %>%
+pull(Average_Age)
+
+male_age <- average_age_gender %>% filter(sex == "1") %>%
+pull(Average_Age)
+
+if (female_age > male_age) {print("Female patients are older on average.")} else if (female_age < male_age) { print("Male patients are older on average.")} else {print("Both groups have the same average age.")}
+```
+
+12. Calculate the average age of patients by months. Which month has the oldest patients on average age?
+
+```{r}
+monthly_age <- df_clean %>% group_by(moa) %>% summarise(
+Average_Age = mean(age, na.rm = TRUE), .groups = "drop") %>%
+arrange(desc(Average_Age))
+
+print(monthly_age)
+
+# month with oldest
+monthly_age %>% slice_max(Average_Age, n = 1)
+```
+
+13. What is the name of the provider that has the highest total charge?
+
+```{r}
+provider_charges <- df_clean %>% group_by(provider) %>% summarise(
+Total_Charges = sum(tot, na.rm = TRUE), .groups = "drop") %>%
+arrange(desc(Total_Charges))
+
+print(provider_charges)
+
+# provider with highest
+provider_charges %>% slice_max(Total_Charges, n = 1)
+```
+
+14. What is the name of the provider that has the least total charge for teenage male on average?
+
+```{r}
+teenage_male_charges <- df_clean %>% filter(age >= 13, age <= 19,
+sex == "1") %>% group_by(provider) %>% summarise(Average_Charge = mean(tot, na.rm = TRUE), Patient_Count = n(), .groups = "drop") %>%
+arrange(Average_Charge)
+
+print(teenage_male_charges)
+
+# provider with loweste
+teenage_male_charges %>% slice_min(Average_Charge, n = 1)
+```
+
+15. Create a season (Spring, Summer, Fall, Winter) variable. Calculate the length of stays by season. Which season has the longest length of stays on average?
+
+```{r}
+df_clean <- df_clean %>% mutate(season = case_when(
+      moa %in% c(3, 4, 5) ~ "Spring",
+      moa %in% c(6, 7, 8) ~ "Summer",
+      moa %in% c(9, 10, 11) ~ "Fall",
+      moa %in% c(12, 1, 2) ~ "Winter",
+      TRUE ~ NA_character_))
+
+# average length by season
+season_los <- df_clean %>% group_by(season) %>% summarise(   Average_LOS = mean(los, na.rm = TRUE), .groups = "drop") %>%
+arrange(desc(Average_LOS))
+
+print(season_los)
+
+# season with longest
+season_los %>% slice_max(Average_LOS, n = 1)
+```
+
+16. On average, how much a 20 year-old male get charged for staying 1 day in the Fall season?
+
+```{r}
+fall_charge <- df_clean %>% filter(age == 20, sex == "1",         season == "Fall", los == 1) %>% summarise(Average_Charge = mean(tot, na.rm = TRUE), Number_of_Patients = n())
+
+print(fall_charge)
+```
+
+17. Write a paragraph to summarize the section and give your comments on the results. You could do some other calculations to support your points.
+
+```{r}
+# In this section, I worked with the Rhode Island Hospital Discharge Data from 2018 to examine patterns in hospital admissions, patient demographics, hospital charges, and length of stay. After identifying missing values in several variables, I cleaned the dataset by replacing missing values with their medians and modes. When comparing patient demographics, male patients were slightly older on average than female patients, with average ages of 51.5 and 50.9, respectively. January had the oldest patients on average, at approximately 51.8 years old. I also found that provider 7205 had the highest total hospital charges, totaling approximately $1.79 billion. Additionally, the average hospital stay was longest during the summer and fall, at approximately 4.96 days, while spring had the shortest average stay at 4.84 days. Finally, 20-year-old male patients admitted during the fall who stayed for one day had an average hospital charge of approximately $16,511. Overall, these results demonstrate that hospital admissions, patient characteristics, charges, and length of stay vary across different months, providers, and demographic groups. However, some results, particularly those involving smaller patient groups, should be interpreted cautiously because they may not represent broader trends in the hospital population. Such as the 20 year old male data point as there were only 6 points of data contributing.
+```
+
+------------------------------------------------------------------------
+
+## II. Data Visualization
+
+Continue with the data from part I.
+
+1.  Provides at least 10 meaningful plots. Comments on the plots. All plots should have title, caption, appropriate labels on x and y-axis
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(gganimate)
+library(gifski)
+# Create month labels
+df_clean <- df_clean %>% mutate(Month = factor(moa, levels = 1:12,
+labels = month.name), Gender = factor(sex, levels = c("1", "2"),
+labels = c("Male", "Female")))
+```
+
+```{r}
+# plot 1
+ggplot(df_clean, aes(x = Month)) + geom_bar() + 
+
+labs(title = "Hospital Admissions by Month", x = "Admission Month",    y = "Number of Patients", caption = "Distribution of hospital admissions throughout 2018.") + theme_minimal()
+
+ggsave("plot1.png", width = 10, height = 6)
+```
+
+```{r}
+# plot 2
+ggplot(df_clean, aes(x = Gender, fill = Gender)) + geom_bar() +
+
+labs(title = "Hospital Admissions by Gender", x = "Gender",
+y = "Number of Patients", caption = "Comparison of male and female hospital admissions.") + theme_minimal() + theme(legend.position = "none")
+
+ggsave("plot2.png")
+```
+
+```{r}
+# plot 3
+ggplot(df_clean, aes(x = age)) + geom_histogram(bins = 30, color = "black") +
+  
+labs(title = "Distribution of Patient Ages", x = "Age",                y = "Frequency", caption = "Distribution of patient ages in the hospital discharge data.") + theme_minimal()
+
+ggsave("plot3.png")
+```
+
+```{r}
+# plot 4
+ggplot(df_clean, aes(x = Gender, y = age, fill = Gender)) + geom_boxplot() +
+  
+labs(title = "Patient Age by Gender", x = "Gender", y = "Age",
+caption = "Comparison of patient age distributions by gender.") +
+theme_minimal()
+
+ggsave("plot4.png")
+```
+
+```{r}
+# plot 5 
+ggplot(df_clean, aes(x = age, fill = Gender)) + geom_histogram(
+bins = 30, alpha = 0.65, position = "identity", color = "black") +
+facet_wrap(~ Gender) + 
+  
+  labs(title = "Distribution of Patient Ages by Gender", x = "Patient Age", y = "Number of Patients", fill = "Gender",
+caption = "Comparison of patient age distributions for male and female hospital patients in 2018.") + theme_minimal() +
+  theme(legend.position = "none")
+
+# save graph
+ggsave("plot5.png", width = 10, height = 6)
+```
+
+```{r}
+# plot 6
+ggplot(df_clean, aes(x = tot)) + geom_histogram(bins = 40, color = "black") +
+  
+labs(title = "Distribution of Hospital Charges", x = "Total Hospital Charge ($)", y = "Frequency", caption = "Distribution of total charges across hospital patients.") + theme_minimal()
+
+ggsave("plot6.png")
+```
+
+```{r}
+# plot 7
+ggplot(df_clean, aes(x = Gender, y = tot, fill = Gender)) + geom_boxplot() +
+  
+labs(title = "Hospital Charges by Gender", x = "Gender",
+y = "Total Charges ($)",
+caption = "Comparison of hospital charges between male and female patients.") + theme_minimal()
+
+ggsave("plot7.png")
+```
+
+```{r}
+# plot 8
+ggplot(df_clean, aes(x = Month, y = los)) + stat_summary(fun = mean,
+geom = "bar") +
+  
+labs(title = "Average Length of Stay by Month", x = "Admission Month",
+y = "Average Length of Stay (Days)", caption = "Mean hospital stay for each admission month.") + theme_minimal()
+
+ggsave("plot8.png")
+```
+
+```{r}
+# plot 9
+ggplot(df_clean, aes(x = age, y = tot)) + geom_point(alpha = 0.3) +
+geom_smooth(method = "lm", se = FALSE) +
+  
+labs(title = "Patient Age vs. Hospital Charges", x = "Patient Age",
+y = "Total Charges ($)", caption = "Relationship between patient age and total hospital charges.") + theme_minimal()
+
+ggsave("plot9.png")
+```
+
+```{r}
+# plot 10
+ggplot(df_clean, aes(x = Month, fill = Gender)) + geom_bar(position = "dodge") +
+  
+labs(title = "Monthly Admissions by Gender", x = "Admission Month",
+y = "Number of Patients", fill = "Gender",
+caption = "Monthly hospital admissions separated by gender.") +
+theme_minimal()
+
+ggsave("plot10.png")
+```
+
+2.  Make an animation plot.
+
+```{r}
+# animation
+age_animation <- ggplot(df_clean, aes(x = age, fill = Gender)
+) + geom_histogram(bins = 25, color = "black", alpha = 0.75) +
+facet_wrap(~ Gender) + labs(title = "Patient Age Distribution Throughout 2018", subtitle = "Admission Month: {closest_state}",
+x = "Patient Age", y = "Number of Patients",
+caption = "Monthly changes in the age distribution of male and female hospital patients.") +
+  
+transition_states(Month, transition_length = 2, state_length = 1) +
+ease_aes("cubic-in-out") + theme_minimal() + theme(legend.position = "none")
+
+age_gif <- animate(age_animation, nframes = 60, fps = 12,         width = 600, height = 500)
+
+age_gif
+
+# save animation
+anim_save("patient_age_by_gender.gif", animation = age_gif)
+```
+
+3.  Write a paragraph to summarize the section and give your comments on the results.
+
+```{r}
+# One interesting finding from the age distributions is the noticeable increase in hospital admissions around age 30. In Graph 3, the overall age distribution shows a spike in this age range, suggesting that patients around this age are admitted to the hospital more frequently than some of the surrounding age groups in a way that is abnormal for such a distribution. One possible explanation for this pattern is pregnancy-related hospital visits, since women in their late twenties and early thirties are more likely to have hospital admissions associated with pregnancy and childbirth. This hypothesis is further supported by Graph 5, which separates the age distributions by gender. The increase around age 30 is almost exclusive to the female distribution. This difference suggests that the increase in admissions around this age may be driven largely by female patients and is consistent with the possibility that pregnancy-related admissions contribute to the pattern observed in Graph 3. Although the data does not directly identify pregnancy as the reason for these admissions, the comparison between the two gender distributions provides evidence supporting this hypothesis and demonstrates how separating the data into different groups can reveal patterns that are less obvious when looking at the overall population.
+```
+
+------------------------------------------------------------------------
+
+## III. Predictive Models
+
+Continue with the data from part I. Make sure you do not have any missing values in the data. Use the follows as the target and input variables:
+
+*Target Variable*: Create the target variable taking value of
+
+- `low` if the total charge of a patient (`tot`) is smaller than the median of the total charge, and
+
+- `high` otherwise.
+
+*Input Variables*:
+
+- "age","sex","raceethn","provider","moa","mod","admtype","campus", 'los'
+
+------------------------------------------------------------------------
+
+1.  Use `filter` function to filter out rows where `raceethn==''` or `admtype==''`. Make sure all the categorical variables are factor, numeric variables are numeric. Set Training : Testing Split = 10 : 90
+
+```{r}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(ranger)
+
+model_data <- df_clean %>% filter(raceethn != "", admtype != "") %>% select(tot, age, sex, raceethn, provider, moa, mod, admtype, campus, los)
+
+# convert
+categorical_vars <- c("sex", "raceethn", "provider",
+                      "moa", "mod", "admtype", "campus")
+
+model_data <- model_data %>% mutate(across(all_of(categorical_vars), as.factor), across(c(tot, age, los), as.numeric))
+
+model_data <- model_data %>% filter(if_all(everything(), ~ !is.na(.x))) %>% filter(is.finite(tot), is.finite(age), is.finite(los))
+
+# calculate median charge
+median_charge <- median(model_data$tot)
+
+# create target variable
+model_data <- model_data %>% mutate(target = factor(if_else(tot < median_charge, "low", "high"), levels = c("low", "high")))
+
+# prevent leakage
+model_data <- model_data %>%
+  select(-tot)
+
+# split
+set.seed(123)
+
+trainIndex <- createDataPartition(model_data$target, p = 0.10,
+list = FALSE)
+
+train_data <- model_data[trainIndex, ]
+test_data <- model_data[-trainIndex, ]
+
+# check results
+cat("Median Hospital Charge:", median_charge, "\n")
+
+dim(train_data)
+dim(test_data)
+
+table(train_data$target)
+table(test_data$target)
+
+sum(is.na(model_data))
+```
+
+2.  Train a decision tree using `rpart`. Plot the decision tree. Plot the variable importance ranked by the tree.
+
+```{r}
+set.seed(123)
+
+tree_model <- rpart(target ~ ., data = train_data, method = "class",
+control = rpart.control(cp = 0.01, minsplit = 20))
+
+# plot
+rpart.plot(tree_model, main = "Decision Tree Predicting Hospital Charges", type = 2, extra = 104, fallen.leaves = TRUE)
+
+# variable importance
+importance <- data.frame(Variable = names(tree_model$variable.importance),
+Importance = as.numeric(tree_model$variable.importance)) %>%
+  arrange(desc(Importance))
+
+print(importance)
+
+# plot
+ggplot(importance, aes(x = reorder(Variable, Importance),
+y = Importance)) + geom_col() + coord_flip() + labs(
+title = "Decision Tree Variable Importance", x = "Variable",
+y = "Importance") + theme_minimal()
+```
+
+3.  Using caret for this question. Set `Training Control` to be: Use Cross-Validation of 5 folds across all models. Train & tune at least 2 different models (i.e. two different values for `method=` in the train function of caret). Plot the hyper-parameter tuning plots for each model.
+
+```{r}
+# five fold
+trControl <- trainControl(method = "cv", number = 5)
+
+# decision tree
+set.seed(123)
+
+caret_tree <- train(target ~ ., data = train_data, method = "rpart",
+trControl = trControl, tuneLength = 10,metric = "Accuracy")
+
+print(caret_tree)
+caret_tree$bestTune
+
+# plot
+plot(caret_tree)
+
+# random forest
+set.seed(123)
+
+caret_forest <- train(target ~ ., data = train_data, method = "ranger",
+trControl = trControl, tuneLength = 5, metric = "Accuracy",
+importance = "impurity")
+
+print(caret_forest)
+caret_forest$bestTune
+
+# plot
+plot(caret_forest)
+```
+
+4.  Plot the comparison of the models in 3.
+
+```{r}
+# compare
+model_results <- resamples(list("Decision Tree" = caret_tree,
+"Random Forest" = caret_forest))
+
+summary(model_results)
+
+# boxplot
+bwplot(model_results, metric = "Accuracy", main = "Comparison of Predictive Models")
+
+# compare accuracy
+comparison <- data.frame(Model = c("Decision Tree", "Random Forest"),
+Average_Accuracy = c(max(caret_tree$results$Accuracy),
+max(caret_forest$results$Accuracy)))
+
+print(comparison)
+
+# visual
+ggplot(comparison,
+aes(x = Model, y = Average_Accuracy, fill = Model)) +
+geom_col() +
+  
+labs(title = "Model Accuracy Comparison", x = "Model", y = "Cross-Validation Accuracy") + theme_minimal()
+```
+
+5.  What is your final selection for the model? Test the accuracy of your final model on the test data.
+
+```{r}
+# compare accuracy
+tree_accuracy <- max(caret_tree$results$Accuracy)
+forest_accuracy <- max(caret_forest$results$Accuracy)
+
+# select best
+if (tree_accuracy >= forest_accuracy) {final_model <- caret_tree
+final_model_name <- "Decision Tree"} else {
+final_model <- caret_forest
+final_model_name <- "Random Forest"}
+
+cat("Selected model:", final_model_name, "\n")
+
+# predict
+predictions <- predict(final_model, newdata = test_data)
+
+# confusion matrix
+cm <- confusionMatrix(data = predictions, reference = test_data$target)
+
+print(cm)
+
+# accuracy
+cat("Testing Accuracy:", round(cm$overall["Accuracy"] * 100, 2), "%\n")
+```
+
+6.  Create another `target` variable (binary), decide the input variables and redo 1 to 5.
+
+```{r}
+# create second
+model_data2 <- df_clean %>%
+  filter(raceethn != "", admtype != "") %>%
+  select(age, sex, raceethn, provider, moa, mod,
+         admtype, campus, los)
+
+# convert
+model_data2 <- model_data2 %>%
+  mutate(
+    across(c(sex, raceethn, provider, moa, mod,
+             admtype, campus), as.factor),
+    across(c(age, los), as.numeric)
+  )
+
+# remove missing
+model_data2 <- model_data2 %>%
+  filter(if_all(everything(), ~ !is.na(.x))) %>%
+  filter(is.finite(age), is.finite(los))
+
+# calculate median length of stay
+median_los <- median(model_data2$los)
+
+# create binary target variable
+model_data2 <- model_data2 %>%
+  mutate(
+    target = factor(
+      if_else(los < median_los, "short", "long"),
+      levels = c("short", "long")
+    )
+  )
+
+# remove original los variable
+model_data2 <- model_data2 %>%
+  select(-los)
+
+# split
+set.seed(123)
+
+trainIndex2 <- createDataPartition(
+  model_data2$target,
+  p = 0.10,
+  list = FALSE
+)
+
+train_data2 <- model_data2[trainIndex2, ]
+test_data2 <- model_data2[-trainIndex2, ]
+
+# check results
+cat("Median Length of Stay:", median_los, "\n")
+
+dim(train_data2)
+dim(test_data2)
+
+table(train_data2$target)
+table(test_data2$target)
+
+# check missing values
+sum(is.na(model_data2))
+```
+
+```{r}
+set.seed(123)
+
+tree_model2 <- rpart(
+  target ~ .,
+  data = train_data2,
+  method = "class",
+  control = rpart.control(cp = 0.01, minsplit = 20)
+)
+
+# plot decision tree
+rpart.plot(
+  tree_model2,
+  main = "Decision Tree Predicting Hospital Stay",
+  type = 2,
+  extra = 104,
+  fallen.leaves = TRUE
+)
+
+# calculate variable importance
+importance2 <- data.frame(
+  Variable = names(tree_model2$variable.importance),
+  Importance = as.numeric(tree_model2$variable.importance)
+) %>%
+  arrange(desc(Importance))
+
+print(importance2)
+
+# plot variable importance
+ggplot(
+  importance2,
+  aes(x = reorder(Variable, Importance), y = Importance)
+) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = "Variable Importance for Hospital Stay Prediction",
+    x = "Variable",
+    y = "Importance",
+    caption = "Variables ranked by their importance in predicting hospital stay."
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# five fold
+trControl2 <- trainControl(
+  method = "cv",
+  number = 5
+)
+
+#decision tree
+
+set.seed(123)
+
+caret_tree2 <- train(
+  target ~ .,
+  data = train_data2,
+  method = "rpart",
+  trControl = trControl2,
+  tuneLength = 10,
+  metric = "Accuracy"
+)
+
+# display results
+print(caret_tree2)
+
+# best tuning parameter
+caret_tree2$bestTune
+
+# plot tuning results
+plot(caret_tree2)
+
+# random forest
+
+set.seed(123)
+
+caret_forest2 <- train(
+  target ~ .,
+  data = train_data2,
+  method = "ranger",
+  trControl = trControl2,
+  tuneLength = 5,
+  metric = "Accuracy",
+  importance = "impurity"
+)
+
+# display results
+print(caret_forest2)
+
+# best tuning parameters
+caret_forest2$bestTune
+
+# plot tuning results
+plot(caret_forest2)
+```
+
+```{r}
+# compare models
+results2 <- resamples(list(
+  "Decision Tree" = caret_tree2,
+  "Random Forest" = caret_forest2
+))
+
+# display comparison
+summary(results2)
+
+# boxplot comparison
+bwplot(
+  results2,
+  metric = "Accuracy",
+  main = "Hospital Stay Model Comparison"
+)
+
+# compare highest accuracy
+comparison2 <- data.frame(
+  Model = c("Decision Tree", "Random Forest"),
+  Average_Accuracy = c(
+    max(caret_tree2$results$Accuracy),
+    max(caret_forest2$results$Accuracy)
+  )
+)
+
+print(comparison2)
+
+# visual comparison
+ggplot(
+  comparison2,
+  aes(x = Model, y = Average_Accuracy, fill = Model)
+) +
+  geom_col() +
+  labs(
+    title = "Hospital Stay Prediction Accuracy",
+    x = "Model",
+    y = "Cross-Validation Accuracy",
+    caption = "Highest cross-validation accuracy achieved by each model."
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# compare model accuracy
+tree_accuracy2 <- max(caret_tree2$results$Accuracy)
+
+forest_accuracy2 <- max(caret_forest2$results$Accuracy)
+
+# select best model
+if (tree_accuracy2 >= forest_accuracy2) {
+  final_model2 <- caret_tree2
+  final_model_name2 <- "Decision Tree"
+} else {
+  final_model2 <- caret_forest2
+  final_model_name2 <- "Random Forest"
+}
+
+cat("Selected model:", final_model_name2, "\n")
+
+# predict using testing data
+predictions2 <- predict(
+  final_model2,
+  newdata = test_data2
+)
+
+# create confusion matrix
+cm2 <- confusionMatrix(
+  data = predictions2,
+  reference = test_data2$target
+)
+
+print(cm2)
+
+# display testing accuracy
+cat(
+  "Testing Accuracy:",
+  round(cm2$overall["Accuracy"] * 100, 2),
+  "%\n"
+)
+```
+
+7.  Write a paragraph to summarize the section and give your comments on the results.
+
+```{r}
+# In this section, I used predictive modeling to analyze the Rhode Island Hospital Discharge Data. Two different prediction targets were created. The first target classified patients into low or high hospital charges based on the median total hospital charge. The second target classified patients into short or long hospital stays based on the median length of stay. For both targets, I used age, sex, race/ethnicity, provider, admission month, discharge month, admission type, and campus as input variables. I trained decision tree and random forest models using five-fold cross-validation and compared their accuracy. The model with the highest cross-validation accuracy was selected as the final model and tested using a separate testing dataset. These models helped examine how patient characteristics and hospital information can be used to predict hospital charges and length of stay. Comparing the two targets also provides insight into whether hospital charges and length of stay can be predicted effectively using the available patient and hospital variables.
+```
+
+------------------------------------------------------------------------
