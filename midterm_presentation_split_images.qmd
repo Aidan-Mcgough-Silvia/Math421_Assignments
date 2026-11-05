@@ -1,0 +1,207 @@
+---
+title: "Hospital Discharge Data: Visualization and Predictive Modeling"
+subtitle: "Math 421 Midterm Presentation"
+author: "Aidan Mcgough-Silvia"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    progress: true
+    center: false
+    width: 1280
+    height: 720
+    transition: slide
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+## Project Overview
+
+- Introduces the hospital discharge dataset and the goals of the visualization and modeling sections.
+
+- **Data:** Rhode Island Department of Health Hospital Discharge Data
+- **Population:** Hospital discharge records from 2018
+- **Part II:** Ten visualizations and one animated visualization
+- **Part III:** Decision tree and random forest models for hospital charges and length of stay
+
+## Visualization 1: Admissions by Month
+
+- Shows how the number of hospital admissions changes from month to month.
+
+![](plot1.png){width="85%"}
+
+## Visualization 2: Admissions by Gender
+
+- Compares the number of admissions across gender groups.
+
+![](plot2.png){width="75%"}
+
+## Visualization 3: Distribution of Patient Ages
+
+- Summarizes the ages of patients included in the 2018 discharge records.
+
+![](plot3.png){width="85%"}
+
+## Visualization 4: Patient Age by Gender
+
+- Compares patient age distributions between gender groups.
+
+![](plot4.png){width="80%"}
+
+## Visualization 5: Distribution of Patient Ages by Gender
+
+- Shows the distribution of ages of patients but also separated by gender.
+
+![](plot5.png){width="85%"}
+
+## Visualization 6: Distribution of Hospital Charges
+
+- Displays the spread of total hospital charges across discharge records.
+
+![](plot6.png){width="85%"}
+
+## Visualization 7: Hospital Charges by Gender
+
+- Compares hospital charges for patients in each gender group.
+
+![](plot7.png){width="85%"}
+
+## Visualization 8: Average Length of Stay by Month
+
+- Compares average length of stay across the months.
+
+![](plot8.png){width="85%"}
+
+## Visualization 9: Patient Age vs. Hospital Charges
+
+- Examines the relationship between patient age and hospital charges.
+
+![](plot9.png){width="85%"}
+
+## Visualization 10: Monthly Admissions by Gender
+
+- Compares monthly admission patterns across gender groups.
+
+![](plot10.png){width="85%"}
+
+## Animated Visualization: Monthly Admissions
+
+- Animates the month-by-month pattern in hospital admissions.
+
+![](patient_age_by_gender.gif){width="75%"}
+
+
+
+## Part III: Predictive Modeling — Question 5
+
+- Introduces the models used to classify hospital charges as low or high.
+
+### Predicting hospital charges
+
+The response variable was created from total hospital charges:
+
+- **Low:** total charge is below the median.
+- **High:** total charge is at or above the median.
+
+The decision tree and random forest were compared using 5-fold cross-validation. The model comparison graph shows both models with cross-validation accuracy of approximately 83%. The random forest is marginally higher in the accuracy comparison, so it is the selected model.
+
+## Question 5: Tuning the Models
+
+- Explains how tuning choices affect cross-validation accuracy.
+
+### Random forest tuning: Number of Predictors
+
+![](model5.png){width="80%"}
+
+## Question 5: Tuning the Models (continued)
+
+### Decision-tree Complexity Parameter
+
+![](model6.png){width="80%"}
+
+## Question 5: Model Comparison
+
+- Compares decision tree and random forest performance for hospital charges.
+
+### Decision Tree
+
+![](model9.png){width="65%"}
+
+## Question 5: Model Comparison (continued)
+
+### Random Forest
+
+![](model10.png){width="75%"}
+
+## Question 5: Decision Tree and Variable Importance
+
+- Shows the charge decision tree and which predictors contribute most.
+
+### Decision Tree
+
+![](model12.png){width="78%"}
+
+### Predictor Importance
+
+![](model11.png){width="75%"}
+
+## Part III: Predictive Modeling — Question 6
+
+- Introduces the models used to classify hospital stays as short or long.
+
+### Predicting length of hospital stay
+
+The response variable was created from length of stay:
+
+- **Short:** length of stay is below the median.
+- **Long:** length of stay is at or above the median.
+
+The original los variable was removed from the predictors after creating the target. This prevents the model from using the value it is supposed to predict.
+
+
+## Question 6: Model Comparison
+
+- Compares decision tree and random forest accuracy for length-of-stay groups.
+
+### Decision Tree
+
+![](model1.png){width="65%"}
+
+## Question 6: Model Comparison (continued)
+
+### Random Forest
+
+![](model2.png){width="75%"}
+
+
+## Question 6: Variable Importance
+
+- Identifies the predictors that contribute most to stay classification.
+
+![](model3.png){width="80%"}
+
+The decision-tree variable-importance graph shows that admission type is the most important predictor of hospital stay classification. Age and campus are the next most important variables, followed by provider. Race/ethnicity has relatively little importance in this displayed model.
+
+## Question 6: Decision Tree
+
+- Shows the decision rules used to classify short and long hospital stays.
+
+![](model4.png){width="85%"}
+
+The tree first splits on admission type. Later splits use provider and campus to further classify records as short or long stays. This suggests that the type of admission and the hospital campus/provider group are useful for distinguishing length-of-stay categories in this model.
+
+## Question 6: Results and Interpretation
+
+- Selected model: Decision tree, based on its higher cross-validation accuracy in the supplied comparison.
+
+The decision tree performs only moderately better than chance-level classification for the two stay groups. Its accuracy is also lower than the approximately 83% cross-validation accuracy shown for the hospital-charge models.
+
+## Challenges and Limitations
+
+- Primarily surrounded the presentation creation portion of the midterm.
+
+## Questions
+
+Thank you!
