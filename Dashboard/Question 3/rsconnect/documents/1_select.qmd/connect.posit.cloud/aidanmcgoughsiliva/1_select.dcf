@@ -1,0 +1,15 @@
+name: 1_select
+title: 1_select
+username: aidanmcgoughsiliva
+account: aidanmcgoughsiliva
+server: connect.posit.cloud
+hostUrl: https://api.connect.posit.cloud/v1
+appId: 01a1f51d-4c40-cec7-17bc-6e26680becca
+bundleId:
+url: https://connect.posit.cloud/aidanmcgoughsiliva/content/01a1f51d-4c40-cec7-17bc-6e26680becca
+version: 1
+quarto_version: 1.10.18
+quarto_engines: knitr
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: 1_select.html|1_select_files
